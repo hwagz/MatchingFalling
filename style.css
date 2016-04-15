@@ -1,0 +1,17 @@
+body{
+  background-color: aqua;
+}
+
+.game{
+  position: absolute;
+  background-color: black;
+  height: 400px;
+  width: 500px;
+  overflow: hidden;
+}
+
+.block{
+  position: absolute;
+  width: 100px;
+  height: 100px;
+}
