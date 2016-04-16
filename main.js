@@ -48,12 +48,13 @@ $(document).ready(function(){
     randomColor: function(){
       return this.colors[Math.floor(Math.random()*this.colors.length)];
     },
-    createBlockObj: function(idStr,colNum,rowNum){
+    createBlockObj: function(idStr,colNum,rowNum,bgColor){
       return {
         init: false,
         id: idStr,
         col: colNum,
-        row: rowNum
+        row: rowNum,
+        color: bgColor
       };
     },
     fall: function(aBlockObj){
@@ -71,11 +72,11 @@ $(document).ready(function(){
         if (this.blockCounts[i]<4) {
           this.currentBlocks++; //increments total blocks
           var id = "block"+this.currentBlocks; //build block id
-          this.blockObjs.push(this.createBlockObj(id,i,this.blockCounts[i])); //add block obj to array
+          var bgColor = this.randomColor(); //get color
+          this.blockObjs.push(this.createBlockObj(id,i,this.blockCounts[i],bgColor)); //add block obj to array
           var endIndex = falling.blockObjs.length-1; //only needs calc'd once
           this.$game.append("<div class='block' id='"+id+"'></div>");
           id="#"+id; //update id for jQ shenanigans
-          var bgColor = this.randomColor(); //get color
           $(id).css({top:-1*this.blockHeight,left:this.blockWidth*i,backgroundColor:bgColor}); //set position and color
           this.fall(falling.blockObjs[endIndex]);
           falling.blockObjs[endIndex].init = true; //boolean for later
@@ -89,6 +90,17 @@ $(document).ready(function(){
           falling.fall(falling.blockObjs[i]);
         }
       }
+    },
+    removeAdjacent: function(){
+      /*
+      Needs to check for color iterating through each block to the
+      left, then each block to the right, and up each time recursively.
+      To-be-removed blocks all added to an array avoiding duplicates
+
+      Iteration might be wonky because block objs are stored in an
+      array. Would need to iterate via col and row values. May be
+      easy and I just don't know exactly how
+      */
     },
     removeBlock: function(id){
       var colNum, rowNum, saveIndex;
