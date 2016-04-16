@@ -10,14 +10,14 @@ $(document).ready(function(){
     numRows: 0,
     maxRowSize: 5,
     speed: 750,
-    moveDist: 20,
+    blockObjs: [],
     blockWidth: 100,
     blockHeight: 100,
     blockInterval: 5000,
     gameHeight: 400,
-    rowBlockCounts: [0,0,0,0,0],
+    blockCounts: [0,0,0,0,0],
     interval: null,
-    colors: ["white","red","pink","brown","darkblue","chartreuse","darkorange","fuchsia"],
+    colors: ["red","darkblue","chartreuse","darkorange","fuchsia"],
     init: function(){
       this.cacheDom();
       this.centerElement(this.$game);
@@ -34,33 +34,62 @@ $(document).ready(function(){
       $el.css({left:desiredx,top:desiredy});
     },
     randomColor: function(){
-      var color = this.colors[Math.floor(Math.random()*this.colors.length)];
-      return color;
+      return this.colors[Math.floor(Math.random()*this.colors.length)];
+    },
+    createBlockObj: function(idStr,colNum,rowNum){
+      return {
+        init: false,
+        id: idStr,
+        col: colNum,
+        row: rowNum
+      };
+    },
+    fall: function(aBlockObj){
+      var fallDist = (falling.gameHeight-(aBlockObj.row*falling.blockHeight));
+      if (aBlockObj.init) {
+        fallDist = falling.blockHeight;
+        aBlockObj.row--;
+      }
+      console.log(fallDist);
+      $("#"+aBlockObj.id).animate({top: "+="+fallDist+"px"},falling.speed);
     },
     addRow: function(){
       for (var i = 0; i < this.maxRowSize; i++) {
-        if (this.rowBlockCounts[i]<4) {
+        if (this.blockCounts[i]<4) {
           this.currentBlocks++;
           var id = "block"+this.currentBlocks;
+          this.blockObjs.push(this.createBlockObj(id,i,this.blockCounts[i]));
+          var endIndex = falling.blockObjs.length-1;
           this.$game.append("<div class='block' id='"+id+"'></div>");
           id="#"+id;
           var bgColor = this.randomColor();
           $(id).css({top:-1*this.blockHeight,left:this.blockWidth*i,backgroundColor:bgColor});
-          //fall animation needs to account for existing blocks
-          $(id).animate({top: "+="+(this.gameHeight-(this.numRows*this.blockHeight))+"px"},this.speed);
-          this.rowBlockCounts[i]++;
+          this.fall(falling.blockObjs[endIndex]);
+          falling.blockObjs[endIndex].init = true;
+          this.blockCounts[i]++;
         }
-
       }
-      this.numRows++;
-      //need to add row of randomized color blocks
-      //row needs to "fall" so that it fills in any gaps
-      //blocks need to have values for determining location
-      //and other shiz
     },
     removeBlock: function(id){
-      var removeId = "#"+id;
-      $(removeId).remove();
+      var colNum;
+      var rowNum;
+      var saveIndex;
+      for (var i = 0; i < falling.blockObjs.length; i++) {
+        if (falling.blockObjs[i].id==id) {
+          colNum = falling.blockObjs[i].col;
+          rowNum = falling.blockObjs[i].row;
+          falling.blockObjs.splice(i,1);
+          saveIndex = i;
+        }
+      }
+      falling.blockCounts[colNum]--;
+      $("#"+id).remove();
+      for (var i = saveIndex+1; i < falling.blockObjs.length; i++) {
+        if (falling.blockObjs[i].col===colNum && falling.blockObjs[i].row>rowNum) {
+          //falling.blockObjs[i].row;
+          falling.fall(falling.blockObjs[i]);
+        }
+      }
     },
     startFalling: function(){
       this.interval = setInterval(function () {
@@ -73,11 +102,9 @@ $(document).ready(function(){
   };
   falling.init();
 
-  //falling.$block.closest()
+
   $(document).on('click','div',function(){
-    //falling.stopFalling();
     falling.removeBlock(this.id);
-    //falling.startFalling();
   });
 
 }); //end
