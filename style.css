@@ -15,3 +15,13 @@ body{
   width: 100px;
   height: 100px;
 }
+
+.scoring{
+  border-radius: 20px;
+  text-align: center;
+  background-color: white;
+  color: fuchsia;
+  position: absolute;
+  height: 200px;
+  width: 200px;
+}

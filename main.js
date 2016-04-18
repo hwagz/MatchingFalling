@@ -22,39 +22,51 @@ $(document).ready(function(){
     gameHeight: 400,
     blockCounts: [0,0,0,0,0],
     interval: null,
+    matchBlock: null,
+    score: 0,
     colors: ["red","blue","chartreuse","orange","fuchsia"],
     init: function(){
       this.cacheDom();
       this.bindEvents();
       this.centerElement(this.$game);
       this.startFalling();
+      this.createMatchBlock();
     },
     cacheDom: function(){
       this.$game = $('.game');
       this.$window = $(window);
       this.$block = $('.block');
       this.$doc = $(document);
+      this.$scoring = $('.scoring');
+      this.$currentScore = $('#currentScore');
     },
     bindEvents: function(){
+      //double firing. Not sure why. Double calling function maybe?
       this.$doc.on('click','div',function(){
         falling.removeBlock(this.id);
+        // Googling got some answers. ret false is the one that works
+        return false;
       });
     },
     centerElement: function($el){
       var desiredx = this.$window.width()/2-$el.width()/2;
       var desiredy = this.$window.height()/2-$el.height()/2;
       $el.css({left:desiredx,top:desiredy});
+      // Also position scoring div at the same time
+      var scoringLeft = desiredx/2-falling.$scoring.width()/2;
+      falling.$scoring.css({left:scoringLeft,top:desiredy});
     },
     randomColor: function(){
       return this.colors[Math.floor(Math.random()*this.colors.length)];
     },
-    createBlockObj: function(idStr,colNum,rowNum,bgColor){
+    createBlockObj: function(idStr,colNum,rowNum){
       return {
         init: false,
         id: idStr,
+        class: 'block',
         col: colNum,
         row: rowNum,
-        color: bgColor
+        color: this.randomColor()
       };
     },
     fall: function(aBlockObj){
@@ -71,16 +83,14 @@ $(document).ready(function(){
       for (var i = 0; i < this.maxRowSize; i++) {
         if (this.blockCounts[i]<4) {
           this.currentBlocks++; //increments total blocks
-          var id = "block"+this.currentBlocks; //build block id
-          var bgColor = this.randomColor(); //get color
-          this.blockObjs.push(this.createBlockObj(id,i,this.blockCounts[i],bgColor)); //add block obj to array
-          var endIndex = falling.blockObjs.length-1; //only needs calc'd once
+          var id = "block"+this.currentBlocks;
+          this.blockObjs.push(this.createBlockObj(id,i,this.blockCounts[i]));
+          var endIndex = falling.blockObjs.length-1; //calc once
           this.$game.append("<div class='block' id='"+id+"'></div>");
-          id="#"+id; //update id for jQ shenanigans
-          $(id).css({top:-1*this.blockHeight,left:this.blockWidth*i,backgroundColor:bgColor}); //set position and color
+          $("#"+id).css({top:-1*this.blockHeight,left:this.blockWidth*i, backgroundColor: falling.blockObjs[endIndex].color});
           this.fall(falling.blockObjs[endIndex]);
           falling.blockObjs[endIndex].init = true; //boolean for later
-          this.blockCounts[i]++; //increments blocks in the specified column
+          this.blockCounts[i]++; //increments blocks in this column
         }
       }
     },
@@ -91,30 +101,46 @@ $(document).ready(function(){
         }
       }
     },
-    removeAdjacent: function(){
-      /*
-      Needs to check for color iterating through each block to the
-      left, then each block to the right, and up each time recursively.
-      To-be-removed blocks all added to an array avoiding duplicates
-
-      Iteration might be wonky because block objs are stored in an
-      array. Would need to iterate via col and row values. May be
-      easy and I just don't know exactly how
-      */
-    },
     removeBlock: function(id){
-      var colNum, rowNum, saveIndex;
+      var colNum, rowNum, saveIndex, color;
       for (var i = 0; i < falling.blockObjs.length; i++) {
         if (falling.blockObjs[i].id==id) {
           colNum = falling.blockObjs[i].col;
           rowNum = falling.blockObjs[i].row;
+          color = falling.blockObjs[i].color;
           falling.blockObjs.splice(i,1);
           saveIndex = i-1;//save for later, decrement because splice
         }
       }
       $("#"+id).remove();
-      falling.blockCounts[colNum]--;
-      falling.dropAboveBlocks(saveIndex,rowNum,colNum);
+      //getting called twice?
+      this.updateScore(color);
+      this.changeMatchColor();
+      this.blockCounts[colNum]--;
+      this.dropAboveBlocks(saveIndex,rowNum,colNum);
+    },
+    changeMatchColor: function(){
+      this.matchBlock.color = this.randomColor();
+      this.$mB.css({backgroundColor: this.matchBlock.color});
+      this.$scoring.css({color: this.matchBlock.color})
+    },
+    createMatchBlock: function(){
+      this.matchBlock = this.createBlockObj("matchBlock");
+      this.$scoring.append("<div class="+this.matchBlock.class+" id='"+this.matchBlock.id+"'></div>");
+      this.$mB = $('#'+this.matchBlock.id);
+      var desiredx = this.$scoring.width()/2-this.$mB.width()/2;
+      this.$mB.css({left: desiredx, backgroundColor: this.matchBlock.color});
+    },
+    updateScore: function(color){
+      if (color==this.matchBlock.color) {
+        // Right answer reward
+        this.score+=10;
+      }
+      else {
+        // Wrong answer penalty
+        this.score-=20;
+      }
+      this.$currentScore.html(this.score);
     },
     startFalling: function(){
       this.interval = setInterval(function () {
